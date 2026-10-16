@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Little Birthday Surprise for Ummiey</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Supabase JS CDN (Opsional untuk database bersama) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --soft-pink: #FFD6E7;
+            --blush-pink: #F8BBD0;
+            --hot-pink: #FF69B4;
+            --lavender: #E6D6FF;
+            --soft-purple: #C8A2FF;
+            --deep-purple: #7545A6;
+            --white: #FFFFFF;
+            --text-dark: #4A3B5C;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--soft-pink), var(--lavender));
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Script Font Elements */
+        .script-font {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        /* Floating Background Ornaments */
+        .floating-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .float-item {
+            position: absolute;
+            animation: floatUp 8s infinite linear;
+            opacity: 0.6;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Hidden Admin Button */
+        .admin-trigger {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000;
+            opacity: 0.4;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .admin-trigger:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        /* Countdown Lock Screen */
+        #countdown-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #fce4ec, #ede7f6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            padding: 20px;
+        }
+
+        .countdown-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 40px 30px;
+            border-radius: 25px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 15px 35px rgba(117, 69, 166, 0.15);
+            z-index: 2;
+        }
+
+        .countdown-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 20px;
+            border: 3px solid var(--hot-pink);
+            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
+        }
+
+        .countdown-card h1 {
+            font-size: 1.4rem;
+            color: var(--deep-purple);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .countdown-card p {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .timer-box {
+            background: var(--lavender);
+            padding: 12px 5px;
+            border-radius: 12px;
+            color: var(--deep-purple);
+        }
+
+        .timer-box span {
+            display: block;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .timer-box small {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .target-date {
+            font-size: 0.85rem;
+            color: var(--hot-pink);
+            font-weight: 500;
+        }
+
+        /* Admin Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 {
+            color: var(--deep-purple);
+            margin-bottom: 15px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--blush-pink);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--hot-pink);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: #e0559d;
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #555;
+        }
+
+        .error-msg {
+            color: #ff4d4d;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        /* Main Content */
+        #main-content {
+            display: none;
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 50px 20px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(200, 162, 255, 0.2);
+        }
+
+
+.hero-section h1.birthday-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    font-weight: 600;
+    letter-spacing: 1px;
+    line-height: 1.4;
+    color: #7545A6;
+    margin-bottom: 18px;
+    text-shadow: none;
+}
+
+
+        .hero-section p {
+            font-size: 1.05rem;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Gallery Section */
+        .gallery-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            color: var(--deep-purple);
+            margin-bottom: 5px;
+        }
+
+        .section-title p {
+            font-size: 0.95rem;
+            color: #666;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .photo-card {
+            background: var(--white);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(248, 187, 208, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(200, 162, 255, 0.4);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-caption {
+            padding: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* Lightbox Modal */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 10px;
+            border: 3px solid var(--white);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: var(--white);
+            font-size: 35px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 15px;
+            cursor: pointer;
+            font-size: 20px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .lightbox-prev { left: 20px; }
+        .lightbox-next { right: 20px; }
+
+        /* Messages Section */
+        .messages-section {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(200, 162, 255, 0.2);
+            margin-bottom: 40px;
+        }
+
+        .message-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .message-form input, .message-form textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--blush-pink);
+            border-radius: 12px;
+            background: var(--white);
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .message-form textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .char-counter {
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        .messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .message-item {
+            background: var(--white);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(117, 69, 166, 0.08);
+            border-left: 4px solid var(--hot-pink);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: var(--deep-purple);
+        }
+
+        .message-time {
+            color: #999;
+        }
+
+        .message-body {
+            font-size: 0.9rem;
+            color: #444;
+            word-break: break-word;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--deep-purple);
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 15px;
+        }
+
+        /* Responsive */
+        @media(max-width: 600px) {
+            .countdown-card {
+                padding: 25px 15px;
+            }
+            .timer-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Background Ornaments -->
+    <div class="floating-bg" id="floatingBg"></div>
+
+    <!-- Admin Hidden Trigger -->
+    <button class="admin-trigger" id="adminTrigger" title="">🩷</button>
+
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-content">
+            <h3>A Little Secret</h3>
+            <input type="password" id="adminPassword" placeholder="Enter secret password...">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="closeModal">Cancel</button>
+                <button class="btn btn-primary" id="loginBtn">Unlock Surprise</button>
+            </div>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+    </div>
+
+    <!-- Countdown Lock Screen -->
+    <div id="countdown-screen">
+        <div class="countdown-card">
+            <img src="https://iili.io/njCwTgf.md.jpg" alt="Ummiey" class="countdown-img">
+            <h1>SHHH... A LITTLE SURPRISE IS WAITING!</h1>
+            <p>Something special is coming for someone very special...<br><strong class="script-font" style="font-size: 1.5rem; color: var(--hot-pink);">Happy Birthday, Ummiey!</strong></p>
+            
+            <div class="timer-grid">
+                <div class="timer-box">
+                    <span id="days">00</span>
+                    <small>Days</small>
+                </div>
+                <div class="timer-box">
+                    <span id="hours">00</span>
+                    <small>Hours</small>
+                </div>
+                <div class="timer-box">
+                    <span id="minutes">00</span>
+                    <small>Mins</small>
+                </div>
+                <div class="timer-box">
+                    <span id="seconds">00</span>
+                    <small>Secs</small>
+                </div>
+            </div>
+
+            <div class="target-date">Open on October 22, 2026 at 06:00 AM WIB</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="birthday-title">HAPPY BIRTHDAY UMMIEY</h1>
+            <p>"Today is all about you, Ummiey.<br>Thank you for filling our lives with love, warmth, and happiness."</p>
+        </section>
+
+        <!-- Photo Gallery -->
+        <section class="gallery-section">
+            <div class="section-title">
+                <h2>OUR LITTLE GALLERY OF LOVE</h2>
+                <p>"Every picture holds a little piece of our love for you."</p>
+            </div>
+            <div class="photo-grid" id="photoGrid">
+                <div class="photo-card" data-index="0">
+                    <img src="https://i.ibb.co.com/gbNZ9SQW/Whats-App-Image-2026-10-16-at-18-38-56-2.jpg" alt="Gallery 1">
+                    <div class="photo-caption">A precious memory 💗</div>
+                </div>
+                <div class="photo-card" data-index="1">
+                    <img src="https://i.ibb.co.com/JFkBL83X/Whats-App-Image-2026-10-16-at-18-38-56.jpg" alt="Gallery 2">
+                    <div class="photo-caption">So much love and joy ✨</div>
+                </div>
+                <div class="photo-card" data-index="2">
+                    <img src="https://i.ibb.co.com/27VnCxHk/Whats-App-Image-2026-10-16-at-18-38-54.jpg" alt="Gallery 3">
+                    <div class="photo-caption">Beautiful moments together 🌸</div>
+                </div>
+                <div class="photo-card" data-index="3">
+                    <img src="https://iili.io/njCeGgs.md.jpg" alt="Gallery 4">
+                    <div class="photo-caption">Forever in our hearts 💖</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Messages Section -->
+        <section class="messages-section">
+            <div class="section-title">
+                <h2>LETTERS FOR UMMIEY</h2>
+                <p>"Leave a little love, a sweet wish, or a prayer for her special day."</p>
+            </div>
+
+            <form class="message-form" id="messageForm">
+                <input type="text" id="senderName" placeholder="Your name..." maxlength="60" required>
+                <textarea id="senderMessage" placeholder="Write something sweet for Ummiey..." maxlength="500" required></textarea>
+                <div class="form-footer">
+                    <span class="char-counter" id="charCounter">500 characters left</span>
+                    <button type="submit" class="btn btn-primary" style="flex: none; padding: 10px 25px;">Send with Love 💗</button>
+                </div>
+            </form>
+
+            <div class="messages-list" id="messagesList">
+                <!-- Dynamic Messages Will Load Here -->
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>"Made with all my love, just for you, Ummiey."</p>
+            <p style="margin-top: 5px; font-size: 0.8rem;">Happy Birthday, October 22, 2026.</p>
+        </footer>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose">&times;</button>
+        <button class="lightbox-nav lightbox-prev" id="lightboxPrev">&#10094;</button>
+        <img id="lightboxImg" src="" alt="Zoomed">
+        <button class="lightbox-nav lightbox-next" id="lightboxNext">&#10095;</button>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // ================= KONFIGURASI SUPABASE (OPSIONAL) =================
+        const SUPABASE_URL = 'https://ladyxklseqokqwdofgtf.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_thiqkNb8lrDBXTjLNb3trg_Vwj70akb';
+        let supabaseClient = null;
+        if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // ================= TARGET WAKTU COUNTDOWN =================
+        const targetDate = new Date('2026-10-22T06:00:00+07:00').getTime();
+        const ADMIN_PASS = '20141977228';
+
+        // Elemen DOM
+        const countdownScreen = document.getElementById('countdown-screen');
+        const mainContent = document.getElementById('main-content');
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#FF69B4', '#FFD6E7', '#C8A2FF', '#FFFFFF', '#FFD700']
+                });
+            }
+        }
+
+        function unlockWebsite() {
+            countdownScreen.style.display = 'none';
+            mainContent.style.display = 'block';
+            triggerConfetti();
+            loadMessages();
+        }
+
+        // Periksa waktu secara real-time
+        const now = new Date().getTime();
+
+        if (now >= targetDate) {
+            // Jika waktu target sudah lewat secara permanen, buka website untuk selamanya
+            unlockWebsite();
+        } else {
+            // Cek apakah admin sedang login di sesi ini (sessionStorage bersifat sementara, hilang jika tab/browser ditutup)
+            const isAdminLoggedIn = sessionStorage.getItem('ummiey_admin_session') === 'true';
+
+            if (isAdminLoggedIn) {
+                unlockWebsite();
+            } else {
+                // Jalankan Countdown Real-Time karena belum waktunya dan belum login admin
+                const timerInterval = setInterval(() => {
+                    const currentTime = new Date().getTime();
+                    const distance = targetDate - currentTime;
+
+                    if (distance <= 0) {
+                        clearInterval(timerInterval);
+                        unlockWebsite();
+                    } else {
+                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                        daysEl.textContent = String(days).padStart(2, '0');
+                        hoursEl.textContent = String(hours).padStart(2, '0');
+                        minutesEl.textContent = String(minutes).padStart(2, '0');
+                        secondsEl.textContent = String(seconds).padStart(2, '0');
+                    }
+                }, 1000);
+            }
+        }
+
+        // ================= ADMIN LOGIN RAHASIA =================
+        const adminTrigger = document.getElementById('adminTrigger');
+        const adminModal = document.getElementById('adminModal');
+        const closeModal = document.getElementById('closeModal');
+        const loginBtn = document.getElementById('loginBtn');
+        const adminPassword = document.getElementById('adminPassword');
+        const errorMsg = document.getElementById('errorMsg');
+
+        adminTrigger.addEventListener('click', () => {
+            adminModal.classList.add('active');
+            adminPassword.value = '';
+            errorMsg.textContent = '';
+        });
+
+        closeModal.addEventListener('click', () => {
+            adminModal.classList.remove('active');
+        });
+
+        loginBtn.addEventListener('click', () => {
+            if (adminPassword.value === ADMIN_PASS) {
+                adminModal.classList.remove('active');
+                // Gunakan sessionStorage agar hanya terbuka saat sesi itu saja (jika di-refresh/dibuka ulang sebelum waktunya, akan kembali ke countdown)
+                sessionStorage.setItem('ummiey_admin_session', 'true');
+                unlockWebsite();
+            } else {
+                errorMsg.textContent = "Oops! That's not the right secret password.";
+            }
+        });
+
+        // ================= FLOATING BACKGROUND ORNAMENTS =================
+        const floatingBg = document.getElementById('floatingBg');
+        const symbols = ['💗', '✨', '🌸', '💜', '⭐'];
+        for (let i = 0; i < 20; i++) {
+            const span = document.createElement('span');
+            span.className = 'float-item';
+            span.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            span.style.left = Math.random() * 100 + 'vw';
+            span.style.animationDuration = (6 + Math.random() * 6) + 's';
+            span.style.animationDelay = (Math.random() * 5) + 's';
+            span.style.fontSize = (14 + Math.random() * 16) + 'px';
+            floatingBg.appendChild(span);
+        }
+
+        // ================= ALBUM & LIGHTBOX =================
+        const photos = [
+            { src: "https://i.ibb.co.com/gbNZ9SQW/Whats-App-Image-2026-10-16-at-18-38-56-2.jpg", caption: "A precious memory 💗" },
+            { src: "https://i.ibb.co.com/JFkBL83X/Whats-App-Image-2026-10-16-at-18-38-56.jpg", caption: "So much love and joy ✨" },
+            { src: "https://i.ibb.co.com/27VnCxHk/Whats-App-Image-2026-10-16-at-18-38-54.jpg", caption: "Beautiful moments together 🌸" },
+            { src: "https://iili.io/njCeGgs.md.jpg", caption: "Forever in our hearts 💖" }
+        ];
+
+        let currentPhotoIndex = 0;
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        const lightboxClose = document.getElementById('lightboxClose');
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
+        const photoCards = document.querySelectorAll('.photo-card');
+
+        photoCards.forEach(card => {
+            card.addEventListener('click', () => {
+                currentPhotoIndex = parseInt(card.getAttribute('data-index'));
+                openLightbox(currentPhotoIndex);
+            });
+        });
+
+        function openLightbox(index) {
+            lightboxImg.src = photos[index].src;
+            lightbox.classList.add('active');
+        }
+
+        lightboxClose.addEventListener('click', () => lightbox.classList.remove('active'));
+        lightbox.addEventListener('click', (e) => { if(e.target === lightbox) lightbox.classList.remove('active'); });
+
+        lightboxPrev.addEventListener('click', () => {
+            currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
+            lightboxImg.src = photos[currentPhotoIndex].src;
+        });
+
+        lightboxNext.addEventListener('click', () => {
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            lightboxImg.src = photos[currentPhotoIndex].src;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'Escape') lightbox.classList.remove('active');
+        });
+
+        // ================= PESAN & UCAPAN KELUARGA =================
+        const messageForm = document.getElementById('messageForm');
+        const senderName = document.getElementById('senderName');
+        const senderMessage = document.getElementById('senderMessage');
+        const charCounter = document.getElementById('charCounter');
+        const messagesList = document.getElementById('messagesList');
+
+        senderMessage.addEventListener('input', () => {
+            const remaining = 500 - senderMessage.value.length;
+            charCounter.textContent = `${remaining} characters left`;
+        });
+
+        async function loadMessages() {
+            messagesList.innerHTML = '<div style="text-align: center; color: #777; padding: 20px;">Loading messages...</div>';
+            let messages = [];
+
+            if (supabaseClient) {
+                const { data, error } = await supabaseClient
+                    .from('ummiey_messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (!error && data) messages = data;
+            } else {
+                const localData = localStorage.getItem('ummiey_local_messages');
+                if (localData) messages = JSON.parse(localData);
+            }
+
+            renderMessages(messages);
+        }
+
+        function renderMessages(messages) {
+            if (messages.length === 0) {
+                messagesList.innerHTML = '<div style="text-align: center; color: #777; padding: 20px;">No messages yet. Be the first to leave a wish for Ummiey! 💗</div>';
+                return;
+            }
+
+            messagesList.innerHTML = '';
+            messages.forEach(msg => {
+                const item = document.createElement('div');
+                item.className = 'message-item';
+                
+                const timeString = msg.created_at ? new Date(msg.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
+                item.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-author"></span>
+                        <span class="message-time"></span>
+                    </div>
+                    <div class="message-body"></div>
+                `;
+                item.querySelector('.message-author').textContent = msg.name;
+                item.querySelector('.message-time').textContent = timeString;
+                item.querySelector('.message-body').textContent = msg.message;
+
+                messagesList.appendChild(item);
+            });
+        }
+
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = senderName.value.trim();
+            const message = senderMessage.value.trim();
+
+            if (!name || !message) return;
+
+            const newMessage = {
+                name: name,
+                message: message,
+                created_at: new Date().toISOString()
+            };
+
+            if (supabaseClient) {
+                const { error } = await supabaseClient.from('ummiey_messages').insert([{ name, message }]);
+                if (error) {
+                    alert('Gagal mengirim pesan ke server. Periksa koneksi atau konfigurasi Supabase.');
+                    return;
+                }
+                loadMessages();
+            } else {
+                let localData = JSON.parse(localStorage.getItem('ummiey_local_messages') || '[]');
+                localData.unshift(newMessage);
+                localStorage.setItem('ummiey_local_messages', JSON.stringify(localData));
+                renderMessages(localData);
+            }
+
+            senderName.value = '';
+            senderMessage.value = '';
+            charCounter.textContent = '500 characters left';
+            triggerConfetti();
+        });
+    </script>
+</body>
+</html>
